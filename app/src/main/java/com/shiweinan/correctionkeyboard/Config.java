@@ -7,7 +7,7 @@ enum CorrectionOrder {
     SelectFirst, CorrectFirst
 };
 enum CorrectionMethod {
-    Touch, Slide, Move
+    Touch, Slide, Tilt
 }
 public class Config {
     //screen width: 1080 height: 1812

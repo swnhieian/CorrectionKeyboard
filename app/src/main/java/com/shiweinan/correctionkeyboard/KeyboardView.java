@@ -10,6 +10,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
@@ -40,7 +41,7 @@ public class KeyboardView extends View {
     int charWidth = 108;
     int charHeight = 167;
     int suggestionHeight = (int)(charHeight*0.8);
-    String[] suggestions = new String[] {"helloo", "hr"};
+    String[] suggestions = new String[] {"", "", ""};
 
     private void drawKeyboard(Canvas canvas) {
         int backGroundColor = Color.rgb(236,239,241);
@@ -52,8 +53,6 @@ public class KeyboardView extends View {
         Drawable d = getResources().getDrawable(R.drawable.googlekeyboard);
 
         double scale = 1080.0 / d.getIntrinsicWidth();
-        System.out.println(d.getIntrinsicHeight() + "," + d.getIntrinsicWidth() +"," +scale +
-        ","+((int)(d.getIntrinsicHeight()*scale)));
         d.setBounds(0, suggestionHeight, 1080, (int)(d.getIntrinsicHeight()*scale) + suggestionHeight);
         d.draw(canvas);
 
@@ -67,9 +66,9 @@ public class KeyboardView extends View {
             p.setTextSize(50);
             p.setTypeface(Typeface.MONOSPACE);
             //12 chars for one suggestion
-            canvas.drawText(suggestions[0], 540-30*suggestions[0].length()/2, suggestionHeight/2+20, p);
+            canvas.drawText(suggestions[1], 540-30*suggestions[1].length()/2, suggestionHeight/2+20, p);
             if (suggestions.length >1) {
-                canvas.drawText(suggestions[1],180-30*suggestions[1].length()/2, suggestionHeight/2+20, p);
+                canvas.drawText(suggestions[0],180-30*suggestions[0].length()/2, suggestionHeight/2+20, p);
             }
             if (suggestions.length >2) {
                 canvas.drawText(suggestions[2],900-30*suggestions[2].length()/2, suggestionHeight/2+20, p);
@@ -100,6 +99,7 @@ public class KeyboardView extends View {
     private float lastY = 0;
     private float lastRotX = 0;
     private boolean inCorrectionStatus = false;
+    private ArrayList<Point> screenPoints = new ArrayList<>();
 
 
     @Override
@@ -113,12 +113,13 @@ public class KeyboardView extends View {
                 //if time > threshold is long touch or gesture
                 //then try to manipulate bubble cursor to correct
                 //else consider it as a simple touch, ignore it
-                if (time - downTime > Config.longPresThreshold) {
+                if (time - downTime > Config.longPresThreshold && screenPoints.size() > 0) {
                     switch (Config.correctionMethod) {
-                        case Move:
+                        case Tilt:
                             break;
                         case Slide:
                             inCorrectionStatus = true;
+                            tv.setShowBubble(true);
                             float deltaX = event.getX() - lastX;
                             float deltaY = event.getY() - lastY;
                             tv.setBubbleDelta(deltaX, deltaY);
@@ -130,9 +131,10 @@ public class KeyboardView extends View {
                 break;
             case MotionEvent.ACTION_UP:
                 if (inCorrectionStatus) {
-                    inCorrectionStatus = false;
+                    endCorrectionMode();
                 } else {
                     processType(event.getX(), event.getY());
+                    if (tv.canUndo) tv.canUndo = false;
                 }
                 break;
             default:
@@ -141,6 +143,12 @@ public class KeyboardView extends View {
         lastX = event.getX();
         lastY = event.getY();
         return true;
+    }
+    public void endCorrectionMode() {
+        inCorrectionStatus = false;
+        tv.setShowBubble(false);
+        screenPoints.clear();
+        updateSuggestion();
     }
     private boolean isCharArea(float x, float y) {
         if (y > suggestionHeight && y < suggestionHeight + charHeight*2) {
@@ -157,16 +165,57 @@ public class KeyboardView extends View {
     private boolean isSpaceArea(float x, float y) {
         return (y > suggestionHeight +charHeight*3 && x > 270 && x < 1350);
     }
+    private boolean isSuggestionArea(float x, float y) {
+        return (y < suggestionHeight);
+    }
     private void processType(float x, float y) {
+        if (isSuggestionArea(x, y)) {
+            select((int)(x / 360));
+        }
         if (isSpaceArea(x, y)) {
-             
+            select(1);
         }
         if (isDeleteArea(x, y)) {
-
+            if (screenPoints.size() > 0) {
+                screenPoints.remove(screenPoints.size() - 1);
+            } else {
+                tv.delete();
+            }
         }
         if (isCharArea(x, y)) {
-
+            screenPoints.add(new Point(x, y));
         }
-
+        updateSuggestion();
+    }
+    private char getRawChar(Point pos) {
+        assert(isCharArea(pos.x, pos.y));
+        String[] lines = new String[] {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
+        int lineNo = (int)((pos.y - suggestionHeight) / charHeight);
+        int lineIdx = (int)((pos.x - (lineNo == 2?1.5*108:lineNo*0.5*108)) / 108);
+        return lines[lineNo].charAt(lineIdx);
+    }
+    public String getRawInput() {
+        String ret = "";
+        for (int i=0; i<screenPoints.size(); i++) {
+            ret += getRawChar(screenPoints.get(i));
+        }
+        return ret;
+    }
+    public ArrayList<Point> getRawInputPoints() {
+        return screenPoints;
+    }
+    private void updateSuggestion() {
+        String raw = getRawInput();
+        suggestions[0] = "";
+        suggestions[1] = raw;
+        suggestions[2] = "";
+        postInvalidate();
+    }
+    private void select(int index) {
+        assert(index < 3);
+        if (suggestions[index] == "") return;
+        tv.appendText(suggestions[index] + " ", screenPoints);
+        screenPoints.clear();
+        updateSuggestion();
     }
 }
