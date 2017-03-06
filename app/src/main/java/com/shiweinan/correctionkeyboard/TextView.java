@@ -30,7 +30,8 @@ public class TextView extends View {
     }
 
     private String text = "I am tring to apply a very loooooooooooooooong string and draw it on the canvas.";
-    private float bubbleX, bubbleY;
+    private float bubbleX = 0;
+    private float bubbleY = 0;
     private boolean showBubble = false;
 
     @Override
@@ -43,11 +44,18 @@ public class TextView extends View {
         paint.setTypeface(Typeface.MONOSPACE);
 
         //34 for one line
-        canvas.drawText("abcdefghijklmnopqrstuvwxyzabcdefgh\nijklmnopqrstuvwxyz", 0, 170, paint);
+        int totLine = (text.length() / Config.lineCharNum) + (text.length() % Config.lineCharNum > 0?1:0);
+        for (int i=0; i<totLine; i++) {
+            String t = text.substring(i*Config.lineCharNum, Math.min((i+1)*Config.lineCharNum, text.length()));
+            canvas.drawText(t, 0, Config.lineStartY + i*Config.lineHeight, paint);
+        }
+
+
+        /*canvas.drawText("abcdefghijklmnopqrstuvwxyzabcdefgh\nijklmnopqrstuvwxyz", 0, 170, paint);
         canvas.drawText(text, 0, 50, paint);
         canvas.drawText(new StringBuffer(text).reverse().toString(), 0, 110, paint);
         canvas.drawText("ijklmnopqrstuvwxyzabcdefghijklmnop", 0, 230, paint);
-        canvas.drawText("qrstuvwxyzabcdefghijklmnopqrstuvwxyz", 0, 290, paint);
+        canvas.drawText("qrstuvwxyzabcdefghijklmnopqrstuvwxyz", 0, 290, paint);*/
         // TODO: consider storing these as member variables to reduce
         Paint paintCursor = new Paint();
         paintCursor.setColor(Color.argb(150, 0, 200, 200));
@@ -65,6 +73,28 @@ public class TextView extends View {
         bubbleY = event.getY();
         this.postInvalidate();
         return true;
+    }
+
+    public void setBubbleDelta(float dx, float dy) {
+        bubbleX += dx;
+        bubbleY += dy;
+        postInvalidate();
+    }
+
+    public void setText(String text) {
+        this.text = text;
+        postInvalidate();
+    }
+    public void appendText(String text) {
+        this.text += text;
+        postInvalidate();
+    }
+    public void delete() {
+        int idx = this.text.lastIndexOf(' ');
+        if (idx > 0) {
+            this.text = this.text.substring(0, idx);
+            postInvalidate();
+        }
     }
 
 

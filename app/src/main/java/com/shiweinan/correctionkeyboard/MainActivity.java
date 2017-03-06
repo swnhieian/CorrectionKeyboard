@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
+import android.widget.*;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -13,6 +14,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+        KeyboardView kbdView = (KeyboardView)findViewById(R.id.kbdView);
+        TextView textView = (TextView)findViewById(R.id.textView);
+        kbdView.setTextView(textView);
 
         WindowManager wm = (WindowManager)getSystemService(Context.WINDOW_SERVICE);
         Display display = wm.getDefaultDisplay();
