@@ -122,7 +122,9 @@ public class KeyboardView extends View {
                             tv.setShowBubble(true);
                             float deltaX = event.getX() - lastX;
                             float deltaY = event.getY() - lastY;
-                            tv.setBubbleDelta(deltaX, deltaY);
+                            float scaleX = Math.max(tv.bubbleX / event.getX(), (1080 - tv.bubbleX) / (1080-event.getX()));
+                            float scaleY = Math.max(tv.bubbleY / event.getY(), (1000 - tv.bubbleY) / (800-event.getY()));
+                            tv.setBubbleDelta(deltaX * scaleX, deltaY * scaleY);
                             break;
                         default:
                             break;
