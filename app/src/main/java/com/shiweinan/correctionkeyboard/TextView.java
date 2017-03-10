@@ -21,9 +21,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
-/**
- * TODO: document your custom view class.
- */
+
 public class TextView extends View {
 
     public float bubbleXOri = 510;
@@ -62,6 +60,35 @@ public class TextView extends View {
 
     List<CorrectionPair> menuItem = new ArrayList<>();
     private int activeMenuIndex = -1;
+    private double inf = 1000000000;
+
+
+    private double getTextDistance(int t1, int t2) {
+        int x1 = getTextX(t1);int x2 = getTextX(t2);
+        int y1 = getTextY(t1);int y2 = getTextY(t2);
+        return Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2));
+    }
+    List<CorrectionPair> showPair = new ArrayList<>();
+    private void drawBackground(Canvas canvas) {
+        Paint p = new Paint();
+        p.setColor(Color.YELLOW);
+        for (int i=0; i<text.length(); i++) {
+            double minDis = inf;
+            int minIdx = -1;
+            for (int j=0; j<showPair.size(); j++) {
+                double d = getTextDistance(i, showPair.get(j).getCenter());
+                if (d < minDis) {
+                    minDis = d;
+                    minIdx = j;
+                }
+            }
+            if (minIdx == selectedShowPair && selectedShowPair>=0) {
+                p.setAlpha((int)(Math.max(255 - 50.0*minDis/Config.lineHeight, 0)));
+                canvas.drawRect(getTextX(i)-this.getWidth() / Config.lineCharNum, getTextY(i)-Config.lineHeight, getTextX(i), getTextY(i), p);
+            }
+        }
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -94,6 +121,18 @@ public class TextView extends View {
             }
             canvas.drawText(String.valueOf(text.charAt(i)), getTextX(i), getTextY(i), tempP);
         }*/
+        //draw text background first
+        drawBackground(canvas);
+
+        String newText = text;
+        if (selectedShowPair >= 0) {
+            CorrectionPair tempP = showPair.get(selectedShowPair);
+            newText = text.substring(0, tempP.st) + kv.getRawInput() + text.substring(tempP.en+1);
+            /*String newText = tempP.word.substring(0, tempP.st - tempP.wordSt+1) + kv.getRawInput() +
+                    tempP.word.substring(tempP.en - tempP.wordSt + 1);
+            canvas.drawText(newText, getTextX(tempP.wordSt), getTextY(tempP.wordSt), doPaint);*/
+
+        }
 
         for (int i=0; i<text.length(); i++) {
             Paint tempP = paint;
@@ -122,6 +161,11 @@ public class TextView extends View {
             canvas.drawText(String.valueOf(text.charAt(i)), getTextX(i), getTextY(i), tempP);
         }
 
+        if (selectedShowPair >= 0) {
+            ///TODO: draw corrected text
+        }
+
+
         if (showMenu()) {//draw menu on correctionSt and correctionEd
             menuItem.clear();
             int len = 0;
@@ -142,7 +186,9 @@ public class TextView extends View {
             if (menuItem.size() >1) {
                 for (int i = 0; i < menuItem.size(); i++) {
 
-                    canvas.drawRect(menuPosX-20, menuPosY + i * menuItemHeight, menuPosX+20 + charWidth * len, menuPosY + (i + 1) * menuItemHeight, menuPaint);
+                    canvas.drawRect(menuPosX - 20, menuPosY + i * menuItemHeight, menuPosX + 20 + charWidth * len, menuPosY + (i + 1) * menuItemHeight+15, menuPaint);
+                }
+                for (int i=0; i<menuItem.size(); i++) {
                     //draw firstPart of Text
                     String text = menuItem.get(i).word;
                     String p1 = text.substring(0, menuItem.get(i).st - menuItem.get(i).wordSt);
@@ -165,7 +211,7 @@ public class TextView extends View {
         canvas.drawText(new StringBuffer(text).reverse().toString(), 0, 110, paint);
         canvas.drawText("ijklmnopqrstuvwxyzabcdefghijklmnop", 0, 230, paint);
         canvas.drawText("qrstuvwxyzabcdefghijklmnopqrstuvwxyz", 0, 290, paint);*/
-        // TODO: consider storing these as member variables to reduce
+
         Paint paintCursor = new Paint();
         paintCursor.setColor(Color.argb(150, 0, 200, 200));
         paintCursor.setStrokeWidth(2);
@@ -219,11 +265,27 @@ public class TextView extends View {
     private double pointDistance(Point p1, Point p2) {
         return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
     }
-    private double getDistance(List<Point> pattern, List<Point> unk) {
+    private double getDistance(List<Point> pattern, boolean isFirst, boolean isLast, List<Point> unk) {
         int lp = pattern.size();
         int lu = unk.size();
+        if ((kv.getRawChar(pattern.get(0)) != kv.getRawChar(unk.get(0))) && !isFirst) {
+            return Config.distThreshold + 150;
+        }
+        if (kv.getRawChar(pattern.get(lp-1)) != kv.getRawChar(unk.get(lu-1)) && !isLast) {
+            return Config.distThreshold + 250;
+        }
+        if (lp == lu) {
+            String ptn = "";
+            String uuk = "";
+            for (int i=0; i<lp; i++) {
+                ptn += kv.getRawChar(pattern.get(i));
+                uuk += kv.getRawChar(unk.get(i));
+            }
+            if (ptn.equals(uuk)) {
+                return Config.distThreshold + 100;
+            }
+        }
         //System.out.println(lp + "x" + lu);
-        double inf = 1000000000;
         double[][] f = new double[lp+1][lu+1];
         for (int i=0; i<lp+1; i++) {
             for (int j=0; j<lu+1; j++) {
@@ -243,9 +305,9 @@ public class TextView extends View {
                 if (i-1>=0 && j-1>=0 && f[i-1][j-1] < inf)
                     temp = Math.min(f[i-1][j-1] + pointDistance(pattern.get(i-1), unk.get(j-1)), temp);
                 if (i-1>=0  && f[i-1][j] < inf)
-                    temp = Math.min(f[i-1][j] + Config.lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
+                    temp = Math.min(f[i-1][j] + 1.5*Config.lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
                 if (j-1>=0  && f[i][j-1] < inf)
-                    temp = Math.min(f[i][j-1] + Config.lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
+                    temp = Math.min(f[i][j-1] + 1.5*Config.lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
                 if (temp < f[i][j]) f[i][j] = temp;
             }
         }
@@ -255,7 +317,7 @@ public class TextView extends View {
             }
             System.out.println();
         }*/
-        return f[lp][lu];
+        return f[lp][lu] / ((unk.size()+pattern.size())>>1);
     }
     int[] textStatus;
     List<CorrectionPair> pairs = new ArrayList<>();
@@ -272,11 +334,11 @@ public class TextView extends View {
         for (int i=0; i<words.length; i++) {
             int idx = 0;
             int mLen = 0;
-            double min = 1000000000;
+            double min = inf;
             for (int len=1; len<words[i].length()+1; len++) {
                 for (int j = 0; j < words[i].length() - len +1; j++) {
                     /*System.out.println("word:" + text.substring(pos + j, pos + j + len));*/
-                    double d = getDistance(this.points.subList(pos + j, pos + j + len), new ArrayList<Point>(raw));
+                    double d = getDistance(this.points.subList(pos + j, pos + j + len), j==0, j+len==words[i].length(), new ArrayList<Point>(raw));
                     CorrectionPair pair = new CorrectionPair(pos+j,pos+j+len-1, d, i, pos, pos+words[i].length()-1, words[i]);
                     pairs.add(pair);
                     /*if (d < min) {
@@ -308,6 +370,7 @@ public class TextView extends View {
         }
         System.out.println("====================");
         //try to fill textStatus
+        showPair.clear();
         for (int i=0; i<pairs.size(); i++) {
             CorrectionPair tempP = pairs.get(i);
             if (tempP.value > Config.distThreshold && i>=Config.distNumThreshold) break;
@@ -322,6 +385,8 @@ public class TextView extends View {
                 for (int t=tempP.st; t<=tempP.en; t++) {
                     textStatus[t] = 1;
                 }
+                pairs.get(i).isShown = true;
+                showPair.add(pairs.get(i));
             } else {//flag = true;
                 for (int t=tempP.wordEn; t>= tempP.wordSt; t --) {
                     if (textStatus[t] != 0) {
@@ -373,8 +438,19 @@ public class TextView extends View {
     private long lastTime = 0;
     private float lastPosX, lastPosY;
     private boolean showMenu = false;
+    private int selectedShowPair = -1;
     public void searchCorrection(float x, float y) {
         //find nearest corrected char
+        int index = -1;
+        double minD = inf;
+        for (int i=0; i<showPair.size(); i++) {
+            double tempD = getBubbleDistance(showPair.get(i).getCenter(), x, y);
+            if (tempD < minD) {
+                minD = tempD;
+                index = i;
+            }
+        }
+        selectedShowPair = index;/*
         int index = 0;
         double minD = 10000000;
         for (int i=0; i<text.length(); i++) {
@@ -414,7 +490,11 @@ public class TextView extends View {
             }
         }
         correctionSt = st;
-        correctionEd = en;
+        correctionEd = en;*/
+        if (index >=0) {
+            correctionSt = showPair.get(index).st;
+            correctionEd = showPair.get(index).en;
+        }
         postInvalidate();
     }
     private int correctionSt = 0;
@@ -457,6 +537,7 @@ public class TextView extends View {
                 searchCorrection(bubbleX, bubbleY);
                 doCorrection();
             }
+            selectedShowPair = -1;
             bubbleX = bubbleXOri;
             bubbleY = bubbleYOri;
         }

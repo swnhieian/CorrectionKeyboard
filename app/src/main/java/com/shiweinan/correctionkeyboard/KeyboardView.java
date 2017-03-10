@@ -13,9 +13,6 @@ import android.view.View;
 import java.util.ArrayList;
 import java.util.Date;
 
-/**
- * TODO: document your custom view class.
- */
 public class KeyboardView extends View {
 
     public KeyboardView(Context context) {
@@ -189,7 +186,7 @@ public class KeyboardView extends View {
         }
         updateSuggestion();
     }
-    private char getRawChar(Point pos) {
+    public char getRawChar(Point pos) {
         assert(isCharArea(pos.x, pos.y));
         String[] lines = new String[] {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
         int lineNo = (int)((pos.y - suggestionHeight) / charHeight);

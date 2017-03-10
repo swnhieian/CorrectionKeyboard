@@ -19,8 +19,8 @@ public class Config {
     public static int lineStartY = 50;
     public static int lineHeight = 60;
 
-    public static double distThreshold = 300;
-    public static int distNumThreshold = 5;
+    public static double distThreshold = 150;
+    public static int distNumThreshold = 0;
     public static double showMenuDistThreshold = 20;
     public static long showMenuTimeThreshold = 500;
 }

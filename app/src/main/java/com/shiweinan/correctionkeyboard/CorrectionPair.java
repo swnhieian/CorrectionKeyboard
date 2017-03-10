@@ -12,6 +12,10 @@ public class CorrectionPair {
     public int wordSt;
     public int wordEn;
     public String word;
+    public boolean isShown = false;
+    public int getCenter() {
+        return ((st + en) >> 1);
+    }
     public CorrectionPair(int start, int end, double value, int wordIndex, int wordSt, int wordEn, String word) {
         this.st = start;
         this.en = end;
