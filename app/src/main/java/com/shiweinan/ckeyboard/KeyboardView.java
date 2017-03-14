@@ -122,7 +122,7 @@ public class KeyboardView extends View {
                         case Slide:*/
                             inCorrectionStatus = true;
                           //  tv.setShowBubble(true);
-                    processor.beginCorrection(screenPoints);
+                    processor.beginCorrection(new ArrayList<Point>(screenPoints));
                             float deltaX = event.getX();
                             float deltaY = event.getY();
                     processor.processTouchMove(deltaX, deltaY, lastX, lastY);

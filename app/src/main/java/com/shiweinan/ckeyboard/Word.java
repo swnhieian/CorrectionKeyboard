@@ -93,6 +93,17 @@ public class Word {
         String ret = this.getString();
         return (ret.substring(0, c.start) + replace + ret.substring(c.end));
     }
+    public void doCorrect(Correction c, String replace, List<Point> pntList) {
+        System.out.println("do correct"+ pointList.size() + "," + c.start +"," + c.end + "," +pntList.size());
+        List<Point> newP = new ArrayList<>(pointList);
+        newP = newP.subList(0, c.start);
+        newP.addAll(pntList);
+        List<Point> lastP = pointList.subList(c.end, pointList.size());
+        newP.addAll(lastP);
+        pointList = newP;
+        System.out.println(getString());
+        System.out.println("==========");
+    }
     public void match(List<Point> user) {
         corrections = new ArrayList<>();
         int len = pointList.size();

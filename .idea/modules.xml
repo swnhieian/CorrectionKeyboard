@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CKeyboard.iml" filepath="$PROJECT_DIR$/CKeyboard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/CorrectionKeyboard.iml" filepath="$PROJECT_DIR$/CorrectionKeyboard.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
