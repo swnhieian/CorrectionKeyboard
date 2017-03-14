@@ -1,0 +1,119 @@
+package com.shiweinan.ckeyboard;
+
+import java.security.Key;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
+/**
+ * Created by Weinan on 2017/3/13.
+ */
+
+public class Word {
+    final double matchThreshold = 200;
+    final double inf = 100000000;
+    final double lineHeight = 167;
+    static int idCount = 0;
+    List<Point> pointList;
+    List<Correction> corrections;
+    int id;
+    int startIndex;
+    public Word(List<Point> pntList, int startIndex) {
+        pointList = new ArrayList<>(pntList);
+        this.startIndex = startIndex;
+        this.id = Word.idCount;
+        Word.idCount ++;
+    }
+    public int size() { return pointList.size(); }
+    public String getString() { return getString(pointList) + " "; }
+    public static String getString(List<Point> pntList) {
+        String ret = "";
+        for (int i=0; i<pntList.size(); i++) {
+            ret += KeyboardView.getRawChar(pntList.get(i));
+        }
+        return ret;
+    }
+    public boolean hasMenu() {
+        return (corrections.size() > 1);
+    }
+
+    private double getDistance(List<Point> pattern, boolean isFirst, boolean isLast, List<Point> unk) {
+            int lp = pattern.size();
+            int lu = unk.size();
+            if ((KeyboardView.getRawChar(pattern.get(0)) != KeyboardView.getRawChar(unk.get(0))) && !isFirst) {
+                return matchThreshold + 150;
+            }
+            if (KeyboardView.getRawChar(pattern.get(lp-1)) != KeyboardView.getRawChar(unk.get(lu-1)) && !isLast) {
+                return matchThreshold + 250;
+            }
+            if (lp == lu) {
+                String ptn = getString(pattern);
+                String uuk = getString(unk);
+                if (ptn.equals(uuk)) {
+                    return matchThreshold + 100;
+                }
+            }
+            //System.out.println(lp + "x" + lu);
+            double[][] f = new double[lp+1][lu+1];
+            for (int i=0; i<lp+1; i++) {
+                for (int j=0; j<lu+1; j++) {
+                    f[i][j] = inf;
+                }
+            }
+            f[0][0] = 0;
+            for (int i=1; i<lp+1; i++) {
+                f[i][0] = inf;
+            }
+            for (int i=1; i<lu+1; i++) {
+                f[0][i] = inf;
+            }
+            for (int i=1; i<lp+1; i++) {
+                for (int j=1; j<lu+1; j++) {
+                    double temp = inf;
+                    if (i-1>=0 && j-1>=0 && f[i-1][j-1] < inf)
+                        temp = Math.min(f[i-1][j-1] + pattern.get(i-1).dist(unk.get(j-1)), temp);
+                    if (i-1>=0  && f[i-1][j] < inf)
+                        temp = Math.min(f[i-1][j] + 1.5*lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
+                    if (j-1>=0  && f[i][j-1] < inf)
+                        temp = Math.min(f[i][j-1] + 1.5*lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
+                    if (temp < f[i][j]) f[i][j] = temp;
+                }
+            }
+        /*for (int i=0; i<lp+1; i++) {
+            for (int j = 0; j < lu + 1; j++) {
+                System.out.print(f[i][j] + " ");
+            }
+            System.out.println();
+        }*/
+            return f[lp][lu] / ((unk.size()+pattern.size())>>1);
+    }
+    public String correctResult(Correction c, String replace) {
+        assert(c.wordId == this.id);
+        String ret = this.getString();
+        return (ret.substring(0, c.start) + replace + ret.substring(c.end));
+    }
+    public void match(List<Point> user) {
+        corrections = new ArrayList<>();
+        int len = pointList.size();
+        for (int l=1; l<pointList.size()+1; l++) {
+            for (int start=0; start < len-l+1; start++) {
+                double d = getDistance(pointList.subList(start, start + l), start == 0, start + l == len, user);
+                if (d < matchThreshold) {
+                    corrections.add(new Correction(start, start + l, d, this));
+                }
+            }
+        }
+        Collections.sort(corrections, new Comparator<Correction>() {
+            @Override
+            public int compare(Correction correction, Correction t1) {
+                if (correction.value < t1.value) return -1;
+                if (correction.value > t1.value) return 1;
+                return 0;
+            }
+        });
+    }
+
+
+
+}
