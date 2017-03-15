@@ -25,6 +25,7 @@ import android.widget.EditText;
 import android.widget.PopupWindow;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -39,7 +40,6 @@ public class EditTextProcessor {
     List<Word> words;
     int currentLen = 0;
     boolean inCorrecting = false;
-    ActionMode.Callback2 aa;
     MainActivity mainActivity;
     public EditTextProcessor(EditText editText, MainActivity mainActivity) {
         this.editText = editText;
@@ -47,8 +47,33 @@ public class EditTextProcessor {
         words = new ArrayList<>();
         if (pm == null) {
             View pmView = mainActivity.getLayoutInflater().inflate(R.layout.sample_popup_menu, null);
-            pm = new PopupMenu(mainActivity, pmView, 300, 500);
+            pm = new PopupMenu(mainActivity, pmView, 500, 500);
         }
+    }
+    boolean canUndo = false;
+    List<Word> undoWords = null;
+    private void stashUndo() {
+        undoWords = new ArrayList<>();
+        for (int i=0; i<words.size(); i++) {
+            undoWords.add(new Word(words.get(i)));
+        }
+        System.out.println("UUUUUUNNNNNNNNDDDDDDDDDDOOOOOOOOO");
+        for (int i=0; i<undoWords.size(); i++) {
+            System.out.println(undoWords.get(i).getString());
+        }
+        System.out.println("========================");
+        canUndo = true;
+    }
+    private void undo() {
+        if (!canUndo) return;
+        words = undoWords;
+        System.out.println("UUUUUUNNNNNNNNDDDDDDDDDDOOOOOOOOO");
+        for (int i=0; i<undoWords.size(); i++) {
+            System.out.println(undoWords.get(i).getString());
+        }
+        System.out.println("========================");
+        updateView();
+        canUndo = false;
     }
     private void matchCorrection(List<Point> pntList) {
         for (int i=0; i<words.size(); i++) {
@@ -64,18 +89,41 @@ public class EditTextProcessor {
     }
     public void tilt(double angle) {
         if (!inCorrecting) return;
+        //System.out.println("====================");
+        //System.out.println("ori:" + tiltOri + "angle:" + angle + "delta:" + (tiltOri - angle));
+        //System.out.println("====================");
         if (selectedWordId >=0 && selectedWordId < topCorrections.size() && topCorrections.get(selectedWordId).word.hasMenu()) {
+            pm.setValue(topCorrections.get(selectedWordId).word, correctingStr);
             if (tiltOri - angle> 0.2) {
-                pm.setValue(topCorrections.get(selectedWordId).word, correctingStr);
-                pm.setSelect((int)((tiltOri - angle - 0.2) / 0.2));
+                System.out.println((new Date()).getTime());
+                System.out.println("+++++++++++++++++++++++++++++111111111");
+                pm.incSelect();
+                tiltOri = angle;
                 if (!pm.isShowing()) {
                     Pair<Float, Float> pp = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
-                    pm.showAsDropDown(editText, (int)Math.floor(pp.first), (int)Math.floor(pp.second));
+                    pm.showAsDropDown(editText, (int)Math.floor(pp.first), (int)Math.floor(pp.second) - editText.getHeight() + editText.getLineHeight());
+                }
+            } else if (tiltOri - angle < -0.2) {
+                System.out.println((new Date()).getTime());
+                System.out.println("------------------------------111111111");
+                pm.decSelect();
+                tiltOri = angle;
+                if (!pm.isShowing()) {
+                    Pair<Float, Float> pp = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
+                    pm.showAsDropDown(editText, (int)Math.floor(pp.first), (int)Math.floor(pp.second) - editText.getHeight() + editText.getLineHeight());
                 }
             }
-        }
+
+                //System.out.println("*********************************" + (int)((tiltOri - angle - 0.1) / 0.2));
+                //pm.setSelect((int)((tiltOri - angle - 0.1) / 0.2));
+            }
+
     }
     public void deleteWord() {
+        if (canUndo) {
+            undo();
+            return;
+        }
         String t = getWholeText();
 
         if (editText.getSelectionStart() == t.length()) {
@@ -109,7 +157,7 @@ public class EditTextProcessor {
                     }
                     text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 }
-                if (w.id == topCorrections.get(selectedWordId).wordId) { //preview change
+                if (w.id == topCorrections.get(selectedWordId).word.id) { //preview change
                     BackgroundColorSpan bcs = new BackgroundColorSpan(Color.YELLOW);
                     text.setSpan(bcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                     String newS = w.correctResult(w.corrections.get(0), correctingStr);
@@ -153,22 +201,26 @@ public class EditTextProcessor {
     }
     public double tiltOri = -1;
     public void doCorrection() {
+        if (selectedWordId < 0) return;
+        if (selectedWordId >= topCorrections.size()) return;
         Correction c = topCorrections.get(selectedWordId);
         Word w = c.word;
         if (w.hasMenu() && pm.isShowing()) {
             c = w.corrections.get(pm.getSelect());
         }
         w.doCorrect(c, correctingStr, correctingPnt);
-        if (correctingStr.length() - c.end + c.start > 0) {
+        if (correctingStr.length() - c.end + c.start != 0) {
             for (int i = 0; i < words.size(); i++) {
                 if (words.get(i).startIndex > w.startIndex) {
                     words.get(i).startIndex += (correctingStr.length() - (c.end - c.start));
                 }
             }
         }
+        updateView();
     }
     public void endCorrection() {
         inCorrecting = false;
+        stashUndo();
         doCorrection();
         if (pm.isShowing()) {
             pm.dismiss();
@@ -208,7 +260,7 @@ public class EditTextProcessor {
             //System.out.println(c.wordId +"("+coord.first+","+coord.second+ ") :" + dist + "(" + selectedWordId + ")");
             topCorrections.get(i).dist = dist;
             if (dist < inf) {
-                if (dist < minD && topCorrections.get(i).wordId != topCorrections.get(selectedWordId).wordId) {
+                if (dist < minD && topCorrections.get(i).word.id != topCorrections.get(selectedWordId).word.id) {
                     minD = dist;
                     minI = i;
                 }
@@ -222,7 +274,7 @@ public class EditTextProcessor {
             cursorY = cursor.second;
             currentX = cursorX;
             currentY = cursorY;
-            System.out.println(topCorrections.get(minI).wordId);
+            System.out.println(topCorrections.get(minI).word.id);
             updateView();
         }
 

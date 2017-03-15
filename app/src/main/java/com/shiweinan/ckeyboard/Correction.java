@@ -7,8 +7,6 @@ package com.shiweinan.ckeyboard;
 public class Correction {
     public int start;
     public int end;
-    public int wordStart;
-    public int wordId;
     public Word word;
     public double value;
     public double dist;
@@ -21,7 +19,12 @@ public class Correction {
         this.end = end;
         this.value = value;
         this.word = word;
-        this.wordStart = word.startIndex;
-        this.wordId = word.id;
+    }
+    public Correction(Correction c) {
+        this.start = c.start;
+        this.end = c.end;
+        this.word = new Word(c.word);
+        this.value = c.value;
+        this.dist = c.dist;
     }
 }

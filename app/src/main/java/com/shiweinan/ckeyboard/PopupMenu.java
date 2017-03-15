@@ -62,10 +62,17 @@ public class PopupMenu extends PopupWindow {
             tv.setVisibility(View.INVISIBLE);
         }
         maxNum = word.corrections.size();
+        //selected = 0;
     }
-    int selected = -1;
+    int selected = 0;
     public int getSelect() {
         return selected;
+    }
+    public void incSelect() {
+        setSelect(selected + 1);
+    }
+    public void decSelect() {
+        setSelect(selected - 1);
     }
     public void setSelect(int i) {
         if (i >= maxNum) i = maxNum - 1;

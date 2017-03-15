@@ -1,6 +1,5 @@
 package com.shiweinan.ckeyboard;
 
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -19,8 +18,24 @@ public class Word {
     List<Correction> corrections;
     int id;
     int startIndex;
+    public Word(Word w) {
+        this.id = w.id;
+        this.startIndex = w.startIndex;
+        this.pointList = new ArrayList<>();
+        for (int i=0; i<w.pointList.size(); i++) {
+            this.pointList.add(w.pointList.get(i).clone());
+        }
+        this.corrections = new ArrayList<>();
+        for (int i=0; i<w.corrections.size(); i++) {
+            Correction cc = w.corrections.get(i);
+            this.corrections.add(new Correction(cc.start, cc.end, cc.value, this));
+        }
+    }
     public Word(List<Point> pntList, int startIndex) {
-        pointList = new ArrayList<>(pntList);
+        pointList = new ArrayList<>();
+        for (int i=0; i<pntList.size(); i++) {
+            pointList.add(pntList.get(i).clone());
+        }
         this.startIndex = startIndex;
         this.id = Word.idCount;
         Word.idCount ++;
@@ -89,7 +104,7 @@ public class Word {
             return f[lp][lu] / ((unk.size()+pattern.size())>>1);
     }
     public String correctResult(Correction c, String replace) {
-        assert(c.wordId == this.id);
+        assert(c.word.id == this.id);
         String ret = this.getString();
         return (ret.substring(0, c.start) + replace + ret.substring(c.end));
     }

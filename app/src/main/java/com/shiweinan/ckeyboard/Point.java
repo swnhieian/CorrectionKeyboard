@@ -13,4 +13,9 @@ public class Point {
     public double dist(Point p) {
         return Math.sqrt(Math.pow(x - p.x, 2) + Math.pow(y - p.y, 2));
     }
+    @Override
+    public Point clone() {
+        Point p = new Point(this.x, this.y);
+        return p;
+    }
 }
