@@ -38,7 +38,6 @@ public class EditTextProcessor {
     final double inf = 10000000;
     EditText editText;
     List<Word> words;
-    int currentLen = 0;
     boolean inCorrecting = false;
     MainActivity mainActivity;
     public EditTextProcessor(EditText editText, MainActivity mainActivity) {
@@ -50,7 +49,7 @@ public class EditTextProcessor {
             pm = new PopupMenu(mainActivity, pmView, 500, 500);
         }
     }
-    boolean canUndo = false;
+    public boolean canUndo = false;
     List<Word> undoWords = null;
     private void stashUndo() {
         undoWords = new ArrayList<>();
@@ -72,7 +71,7 @@ public class EditTextProcessor {
             System.out.println(undoWords.get(i).getString());
         }
         System.out.println("========================");
-        updateView();
+        showCorrectionHints(new ArrayList<Point>());
         canUndo = false;
     }
     private void matchCorrection(List<Point> pntList) {
@@ -83,8 +82,7 @@ public class EditTextProcessor {
     }
     PopupMenu pm = null;
     public void addWord(List<Point> pntList) {
-        words.add(new Word(pntList, currentLen));
-        currentLen += (pntList.size() + 1);
+        words.add(new Word(pntList, getWholeText().length()));
         updateView();
     }
     public void tilt(double angle) {
@@ -129,7 +127,6 @@ public class EditTextProcessor {
         if (editText.getSelectionStart() == t.length()) {
             if (words.size() > 0) {
                 Word last = words.remove(words.size() - 1);
-                currentLen -= (last.size() + 1);
                 updateView();
             }
         } else {
@@ -147,16 +144,26 @@ public class EditTextProcessor {
     private void updateView() {
         String str = getWholeText();
         text = new SpannableStringBuilder(str);
+        for (int i = 0; i < words.size(); i++) {
+            Word w = words.get(i);
+            if (w.corrections != null && w.corrections.size() > 0) {
+                ForegroundColorSpan fcs = new ForegroundColorSpan(Color.BLUE);
+                if (w.corrections.size() > 1) {
+                    fcs = new ForegroundColorSpan(Color.RED);
+                }
+                text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            }
+        }
         if (inCorrecting) {
             for (int i = 0; i < words.size(); i++) {
                 Word w = words.get(i);
-                if (w.corrections.size() > 0) {
+                /*if (w.corrections.size() > 0) {
                     ForegroundColorSpan fcs = new ForegroundColorSpan(Color.BLUE);
                     if (w.corrections.size() > 1) {
                         fcs = new ForegroundColorSpan(Color.RED);
                     }
                     text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                }
+                }*/
                 if (w.id == topCorrections.get(selectedWordId).word.id) { //preview change
                     BackgroundColorSpan bcs = new BackgroundColorSpan(Color.YELLOW);
                     text.setSpan(bcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
@@ -173,6 +180,21 @@ public class EditTextProcessor {
     List<Correction> topCorrections = new ArrayList<>();
     String correctingStr = "";
     List<Point> correctingPnt = new ArrayList<>();
+    public void showCorrectionHints(List<Point> pntList) {
+        matchCorrection(pntList);
+        correctingStr = Word.getString(pntList);
+        correctingPnt = pntList;
+        topCorrections.clear();
+        for (int i = 0; i < words.size(); i++) {
+            Word w = words.get(i);
+            if (w.corrections.size() > 0) {
+                Correction c = w.corrections.get(0);
+                topCorrections.add(c);
+            }
+        }
+        updateView();
+
+    }
     public void beginCorrection(List<Point> pntList) {
         if (inCorrecting) return;
 
@@ -228,7 +250,7 @@ public class EditTextProcessor {
         text.clearSpans();
         editText.setText(text);
         editText.setSelection(text.length());
-        updateView();
+        showCorrectionHints(new ArrayList<Point>());
     }
     public float cursorX, cursorY;
     public float currentX, currentY;
@@ -267,6 +289,11 @@ public class EditTextProcessor {
             }
         }
         if (minI >= 0) {
+            if (selectedWordId != minI) {
+                if (pm.isShowing()) {
+                    pm.dismiss();
+                }
+            }
             selectedWordId = minI;
             tiltOri = mainActivity.getTiltAngle();
             Pair<Float, Float> cursor = getTextCoordinate(topCorrections.get(minI).getCenter());

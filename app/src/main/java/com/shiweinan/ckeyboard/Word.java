@@ -121,6 +121,7 @@ public class Word {
     }
     public void match(List<Point> user) {
         corrections = new ArrayList<>();
+        if (user.size() == 0) return;
         int len = pointList.size();
         for (int l=1; l<pointList.size()+1; l++) {
             for (int start=0; start < len-l+1; start++) {

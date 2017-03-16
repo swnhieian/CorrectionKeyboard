@@ -169,12 +169,15 @@ public class KeyboardView extends View {
         if (isDeleteArea(x, y)) {
             if (screenPoints.size() > 0) {
                 screenPoints.remove(screenPoints.size() - 1);
+                processor.showCorrectionHints(screenPoints);
             } else {
                 processor.deleteWord();
             }
         }
         if (isCharArea(x, y)) {
             screenPoints.add(new Point(x, y));
+            processor.showCorrectionHints(screenPoints);
+            processor.canUndo = false;
         }
         updateSuggestion();
     }
@@ -227,6 +230,7 @@ public class KeyboardView extends View {
         //tv.appendText(suggestions[index] + " ", screenPoints);
         processor.addWord(screenPoints);
         screenPoints.clear();
+        processor.showCorrectionHints(screenPoints);
         updateSuggestion();
     }
 }
