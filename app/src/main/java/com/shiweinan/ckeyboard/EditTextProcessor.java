@@ -25,6 +25,8 @@ import android.widget.EditText;
 import android.widget.PopupWindow;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -56,21 +58,21 @@ public class EditTextProcessor {
         for (int i=0; i<words.size(); i++) {
             undoWords.add(new Word(words.get(i)));
         }
-        System.out.println("UUUUUUNNNNNNNNDDDDDDDDDDOOOOOOOOO");
+        /*System.out.println("UUUUUUNNNNNNNNDDDDDDDDDDOOOOOOOOO");
         for (int i=0; i<undoWords.size(); i++) {
             System.out.println(undoWords.get(i).getString());
         }
-        System.out.println("========================");
+        System.out.println("========================");*/
         canUndo = true;
     }
     private void undo() {
         if (!canUndo) return;
         words = undoWords;
-        System.out.println("UUUUUUNNNNNNNNDDDDDDDDDDOOOOOOOOO");
+        /*System.out.println("UUUUUUNNNNNNNNDDDDDDDDDDOOOOOOOOO");
         for (int i=0; i<undoWords.size(); i++) {
             System.out.println(undoWords.get(i).getString());
         }
-        System.out.println("========================");
+        System.out.println("========================");*/
         showCorrectionHints(new ArrayList<Point>());
         canUndo = false;
     }
@@ -78,12 +80,35 @@ public class EditTextProcessor {
         for (int i=0; i<words.size(); i++) {
             words.get(i).match(pntList);
         }
-        updateView();
+        updateView(editText.getSelectionStart());
     }
     PopupMenu pm = null;
     public void addWord(List<Point> pntList) {
-        words.add(new Word(pntList, getWholeText().length()));
-        updateView();
+        String t = getWholeText();
+        int st = editText.getSelectionStart();
+        int en = editText.getSelectionEnd();
+        if (st == t.length()) {
+            words.add(new Word(pntList, getWholeText().length()));
+            updateView();
+        } else {
+            if (st < en) { // if there is some text selected, delete first
+                deleteWord();
+            }//now add text to word
+            int wordNo = -1;
+            for (int i=0; i<words.size(); i++) {
+                Word w = words.get(i);
+                if (w.startIndex <= st && st <= w.startIndex + w.size()) {
+                    wordNo = i;
+                    break;
+                }
+            }
+            if (wordNo > 0) {
+                Word w = words.get(wordNo);
+                w.pointList.addAll(st - w.startIndex, pntList);
+                updateView(st + pntList.size());
+            }
+
+        }
     }
     public void tilt(double angle) {
         if (!inCorrecting) return;
@@ -118,20 +143,60 @@ public class EditTextProcessor {
 
     }
     public void deleteWord() {
-        if (canUndo) {
-            undo();
-            return;
-        }
         String t = getWholeText();
 
         if (editText.getSelectionStart() == t.length()) {
+            if (canUndo) {
+                undo();
+                return;
+            }
             if (words.size() > 0) {
                 Word last = words.remove(words.size() - 1);
                 updateView();
             }
         } else {
             // TODO: add delete part of word
+            System.out.println(String.format("%d --> %d",editText.getSelectionStart(), editText.getSelectionEnd()));
+            int st = editText.getSelectionStart();
+            if (editText.getSelectionStart() == editText.getSelectionEnd()) {
+                deletePartOfText(editText.getSelectionStart());
+            } else {
+                for (int i = editText.getSelectionStart(); i < editText.getSelectionEnd(); i++) {
+                    deletePartOfText(st+1);
+                }
+            }
+            updateView(Math.max(st-1, 0));
         }
+    }
+    private void deletePartOfText(int index) {
+        System.out.println("delete part of text: " + index);
+        int wordNo = -1;
+        boolean needConcat = false;
+        for (int i=0; i<words.size(); i++) {
+            Word w = words.get(i);
+            System.out.println("w:"+w.startIndex +"size:" + w.size());
+            if (index > w.startIndex && index<=w.startIndex+ w.size()+1) {
+                wordNo = i;
+                if (index == w.startIndex + w.size()+1) {
+                    needConcat = true;
+                }
+                break;
+            }
+        }
+        System.out.println(String.format("wordNo:%d,needCant:%b", wordNo, needConcat));
+        if (wordNo >= 0) {
+            if (needConcat && wordNo < words.size() - 1) {
+                words.get(wordNo).pointList.addAll(words.get(wordNo+1).pointList);
+                words.remove(wordNo + 1);
+            } else if (!needConcat) {
+                words.get(wordNo).pointList.remove(index - words.get(wordNo).startIndex - 1);
+            }
+            for (int i=wordNo + 1; i<words.size(); i++) {
+                words.get(i).startIndex --;
+            }
+        }
+
+
     }
     private String getWholeText() {
         String str = "";
@@ -142,6 +207,9 @@ public class EditTextProcessor {
     }
     private SpannableStringBuilder text;
     private void updateView() {
+        updateView(getWholeText().length());
+    }
+    private void updateView(int cursorPos) {
         String str = getWholeText();
         text = new SpannableStringBuilder(str);
         for (int i = 0; i < words.size(); i++) {
@@ -151,7 +219,9 @@ public class EditTextProcessor {
                 if (w.corrections.size() > 1) {
                     fcs = new ForegroundColorSpan(Color.RED);
                 }
-                text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                //text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                Correction c =  w.corrections.get(0);
+                text.setSpan(fcs, w.startIndex + c.start, w.startIndex + c.end, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
             }
         }
         if (inCorrecting) {
@@ -175,7 +245,7 @@ public class EditTextProcessor {
             }
         }
         editText.setText(text);
-        editText.setSelection(text.length());
+        editText.setSelection(cursorPos);
     }
     List<Correction> topCorrections = new ArrayList<>();
     String correctingStr = "";
@@ -192,10 +262,10 @@ public class EditTextProcessor {
                 topCorrections.add(c);
             }
         }
-        updateView();
+        updateView(editText.getSelectionStart());
 
     }
-    public void beginCorrection(List<Point> pntList) {
+    public void beginCorrection(List<Point> pntList, float xpos, float ypos) {
         if (inCorrecting) return;
 
         matchCorrection(pntList);
@@ -211,12 +281,29 @@ public class EditTextProcessor {
             }
         }
         if (topCorrections.size() > 0) {
-            Pair<Float, Float> p = getTextCoordinate(topCorrections.get(0).getCenter());
+            //use xpos and ypos(mainly xpos) to determine which correction should be select originally
+            double tempV  = inf;
+            selectedWordId = -1;
+            for (int i=0; i<topCorrections.size(); i++) {
+                Correction c = topCorrections.get(i);
+                if (Math.abs(getTextCoordinate(c.getCenter()).first - xpos) < 108) {
+                    if (c.value < tempV) {
+                        selectedWordId = i;
+                    }
+                }
+            }
+            if (selectedWordId == -1) {
+                for (int i=0; i<topCorrections.size(); i++) {
+                    if (topCorrections.get(i).value < tempV) {
+                        selectedWordId = i;
+                    }
+                }
+            }
+            Pair<Float, Float> p = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
             cursorX = p.first;
             cursorY = p.second;
             currentX = cursorX;
             currentY = cursorY;
-            selectedWordId = 0;
             tiltOri = mainActivity.getTiltAngle();
             updateView();
         }
@@ -255,11 +342,19 @@ public class EditTextProcessor {
     public float cursorX, cursorY;
     public float currentX, currentY;
     private double getLineDist(float x, float y, float dx, float dy, float cx, float cy) {
+        //System.out.println(String.format("%f,%f->%f,%f --- %f, %f", cx, cy, x, y, dx, dy));
         if ((x - cx)*dx <0 || (y-cy)*dy<0) return inf;
-        double c = dx * cy - dy * cx;
+        float a = dx * (x - cx) + dy * (y - cy);
+        double d1 = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+        double d2 = Math.sqrt(Math.pow(x - cx, 2)+ Math.pow(y - cy, 2));
+        if (d1 == 0 || d2 == 0) return inf;
+        double cos = Math.abs(Math.acos(a / d1 / d2));
+        return cos;
+        /*double c = dx * cy - dy * cx;
         double numerator = Math.abs(dy * x - dx * y + c);
         double denominator = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-        return (numerator / denominator);
+        return (numerator / denominator);*/
+
     }
     private int selectedWordId = -1;
     public void processTouchMove(float x, float y, float lastX, float lastY) {
@@ -269,17 +364,17 @@ public class EditTextProcessor {
         currentY += deltaY;
         //System.out.println(String.format("x:%f,y:%f,dx:%f,dy:%f", x, y, deltaX, deltaY));
         //if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
-        if (Math.abs(currentX - cursorX) < 20 && Math.abs(currentY - cursorY) < 20) return;
+        if (Math.abs(currentX - cursorX) < 35 && Math.abs(currentY - cursorY) < 35) return;
         deltaX = currentX - cursorX;
         deltaY = currentY - cursorY;
-        if (Math.abs(deltaX) <0.1 && Math.abs(deltaY)<0.1) return;
+        if (Math.abs(deltaX) <20 && Math.abs(deltaY)<20) return;
         double minD = inf;
         int minI = -1;
         for (int i=0; i<topCorrections.size(); i++) {
             Correction c = topCorrections.get(i);
             Pair<Float, Float> coord = getTextCoordinate(c.getCenter());
             double dist = getLineDist(coord.first, coord.second, deltaX, deltaY, cursorX, cursorY);
-            //System.out.println(c.wordId +"("+coord.first+","+coord.second+ ") :" + dist + "(" + selectedWordId + ")");
+            //System.out.println(c.word.id +"("+coord.first+","+coord.second+ ") :" + dist + "(" + selectedWordId + ")");
             topCorrections.get(i).dist = dist;
             if (dist < inf) {
                 if (dist < minD && topCorrections.get(i).word.id != topCorrections.get(selectedWordId).word.id) {
@@ -295,15 +390,16 @@ public class EditTextProcessor {
                 }
             }
             selectedWordId = minI;
-            tiltOri = mainActivity.getTiltAngle();
-            Pair<Float, Float> cursor = getTextCoordinate(topCorrections.get(minI).getCenter());
-            cursorX = cursor.first;
-            cursorY = cursor.second;
-            currentX = cursorX;
-            currentY = cursorY;
-            System.out.println(topCorrections.get(minI).word.id);
-            updateView();
+
         }
+        tiltOri = mainActivity.getTiltAngle();
+        Pair<Float, Float> cursor = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
+        cursorX = cursor.first;
+        cursorY = cursor.second;
+        currentX = cursorX;
+        currentY = cursorY;
+        //System.out.println(topCorrections.get(minI).word.id);
+        updateView();
 
     }
     public Pair<Float, Float> getTextCoordinate(int index) {

@@ -50,18 +50,18 @@ public class PopupMenu extends PopupWindow {
     int maxNum = 0;
     int[] ids = new int[] {R.id.text0, R.id.text1, R.id.text2};
     public void setValue(Word word, String replaceStr) {
-        for (int i=0; i<3; i++) {
+        for (int i=1; i<4; i++) {
             if (word.corrections.size() > i) {
-                TextView tv = (TextView) contentView.findViewById(ids[i]);
+                TextView tv = (TextView) contentView.findViewById(ids[i-1]);
                 String res = word.correctResult(word.corrections.get(i), replaceStr);
                 tv.setText(res);
             }
         }
-        for (int i=word.corrections.size(); i<3; i++) {
+        for (int i=word.corrections.size()-1; i<3; i++) {
             TextView tv = (TextView) contentView.findViewById(ids[i]);
             tv.setVisibility(View.INVISIBLE);
         }
-        maxNum = word.corrections.size();
+        maxNum = word.corrections.size()-1;
         //selected = 0;
     }
     int selected = 0;
