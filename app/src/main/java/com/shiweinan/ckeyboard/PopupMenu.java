@@ -66,7 +66,7 @@ public class PopupMenu extends PopupWindow {
     }
     int selected = 0;
     public int getSelect() {
-        return selected;
+        return selected+1;
     }
     public void incSelect() {
         setSelect(selected + 1);

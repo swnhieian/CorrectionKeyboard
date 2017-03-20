@@ -227,7 +227,10 @@ public class KeyboardView extends View {
     }
     private void select(int index) {
         assert(index < 3);
-        if (suggestions[index] == "") return;
+        if (suggestions[index] == "") {
+            processor.addWord(new ArrayList<Point>());
+            return;
+        }
         //tv.appendText(suggestions[index] + " ", screenPoints);
         processor.addWord(screenPoints);
         screenPoints.clear();

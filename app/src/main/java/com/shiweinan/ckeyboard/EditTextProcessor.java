@@ -83,6 +83,14 @@ public class EditTextProcessor {
         updateView(editText.getSelectionStart());
     }
     PopupMenu pm = null;
+    private void updateStartIndex() {
+        int t = 0;
+        for (int i=0; i<words.size(); i++) {
+            Word w = words.get(i);
+            w.startIndex = t;
+            t += w.getString().length();
+        }
+    }
     public void addWord(List<Point> pntList) {
         String t = getWholeText();
         int st = editText.getSelectionStart();
@@ -102,10 +110,34 @@ public class EditTextProcessor {
                     break;
                 }
             }
-            if (wordNo > 0) {
+            if (wordNo >= 0) {
                 Word w = words.get(wordNo);
-                w.pointList.addAll(st - w.startIndex, pntList);
-                updateView(st + pntList.size());
+                if (pntList.size() > 0) {
+                    w.pointList.addAll(st - w.startIndex, pntList);
+                    updateView(st + pntList.size());
+                } else {
+                    assert(pntList.size() == 0); // add a space
+                    if (w.startIndex < st && st < w.startIndex + w.size()) {
+                        System.out.println(String.format("st:%d, w:%d-%d", st, w.startIndex, w.startIndex+w.size()));
+                        List<Point> p = new ArrayList<>();
+                        for (int i=st-w.startIndex; i<w.size(); i++) {
+                            p.add(w.pointList.get(i).clone());
+                        }
+                        for (int i=0; i<p.size(); i++) {
+                            w.pointList.remove(st - w.startIndex);
+                        }
+                        Word newW = new Word(p, st+1);
+                        words.add(wordNo+1, newW);
+                    } else if (w.startIndex == st ){
+                        Word newW = new Word(pntList, st+1);
+                        words.add(wordNo, newW);
+                    } else {
+                        Word newW = new Word(pntList, st+1);
+                        words.add(wordNo+1, newW);
+                    }
+                    updateView(st + 1);
+
+                }
             }
 
         }
@@ -148,6 +180,7 @@ public class EditTextProcessor {
         if (editText.getSelectionStart() == t.length()) {
             if (canUndo) {
                 undo();
+                updateView();
                 return;
             }
             if (words.size() > 0) {
@@ -210,6 +243,7 @@ public class EditTextProcessor {
         updateView(getWholeText().length());
     }
     private void updateView(int cursorPos) {
+        updateStartIndex();
         String str = getWholeText();
         text = new SpannableStringBuilder(str);
         for (int i = 0; i < words.size(); i++) {
@@ -221,7 +255,7 @@ public class EditTextProcessor {
                 }
                 //text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 Correction c =  w.corrections.get(0);
-                text.setSpan(fcs, w.startIndex + c.start, w.startIndex + c.end, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                text.setSpan(fcs, w.startIndex + c.start, Math.min(w.startIndex + c.end, text.length()), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
             }
         }
         if (inCorrecting) {
@@ -239,13 +273,18 @@ public class EditTextProcessor {
                     text.setSpan(bcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                     String newS = w.correctResult(w.corrections.get(0), correctingStr);
                     text.replace(w.startIndex, Math.min(w.startIndex + newS.length(), text.length()), newS);
+                    if (newS.length() < w.size()) {//delete str case
+                        String t = "";
+                        for (int k=0; k<w.size() - newS.length(); k++) t += " ";
+                        text.replace(w.startIndex+newS.length(), w.startIndex+w.size(), t);
+                    }
                     UnderlineSpan us = new UnderlineSpan();
                     text.setSpan(us, w.startIndex + w.corrections.get(0).start, w.startIndex + w.corrections.get(0).start+correctingStr.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 }
             }
         }
         editText.setText(text);
-        editText.setSelection(cursorPos);
+        editText.setSelection(Math.min(cursorPos, text.length()));
     }
     List<Correction> topCorrections = new ArrayList<>();
     String correctingStr = "";
@@ -318,12 +357,9 @@ public class EditTextProcessor {
             c = w.corrections.get(pm.getSelect());
         }
         w.doCorrect(c, correctingStr, correctingPnt);
-        if (correctingStr.length() - c.end + c.start != 0) {
-            for (int i = 0; i < words.size(); i++) {
-                if (words.get(i).startIndex > w.startIndex) {
-                    words.get(i).startIndex += (correctingStr.length() - (c.end - c.start));
-                }
-            }
+        int endLen = w.size();
+        if (endLen == 0) {
+            words.remove(w);
         }
         updateView();
     }
@@ -364,10 +400,9 @@ public class EditTextProcessor {
         currentY += deltaY;
         //System.out.println(String.format("x:%f,y:%f,dx:%f,dy:%f", x, y, deltaX, deltaY));
         //if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) return;
-        if (Math.abs(currentX - cursorX) < 35 && Math.abs(currentY - cursorY) < 35) return;
         deltaX = currentX - cursorX;
         deltaY = currentY - cursorY;
-        if (Math.abs(deltaX) <20 && Math.abs(deltaY)<20) return;
+        if (Math.abs(deltaX) <35 && Math.abs(deltaY)<35) return;
         double minD = inf;
         int minI = -1;
         for (int i=0; i<topCorrections.size(); i++) {

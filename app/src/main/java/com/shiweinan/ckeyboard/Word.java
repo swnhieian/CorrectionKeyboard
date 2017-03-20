@@ -10,8 +10,9 @@ import java.util.List;
  */
 
 public class Word {
-    final double matchThreshold = 200;
+    final double matchThreshold = 300;
     final double inf = 100000000;
+    final double delta =  1e-8;
     final double lineHeight = 167;
     static int idCount = 0;
     List<Point> pointList;
@@ -56,17 +57,18 @@ public class Word {
     private double getDistance(List<Point> pattern, boolean isFirst, boolean isLast, List<Point> unk) {
             int lp = pattern.size();
             int lu = unk.size();
-            if ((KeyboardView.getRawChar(pattern.get(0)) != KeyboardView.getRawChar(unk.get(0))) && !isFirst) {
+            /*if ((KeyboardView.getRawChar(pattern.get(0)) != KeyboardView.getRawChar(unk.get(0))) && !isFirst) {
                 return matchThreshold + 150;
             }
             if (KeyboardView.getRawChar(pattern.get(lp-1)) != KeyboardView.getRawChar(unk.get(lu-1)) && !isLast) {
                 return matchThreshold + 250;
-            }
+            }*/
             if (lp == lu) {
                 String ptn = getString(pattern);
                 String uuk = getString(unk);
                 if (ptn.equals(uuk)) {
-                    return matchThreshold + 100;
+                    return 0;
+                    //return matchThreshold + 100;
                 }
             }
             //System.out.println(lp + "x" + lu);
@@ -86,12 +88,13 @@ public class Word {
             for (int i=1; i<lp+1; i++) {
                 for (int j=1; j<lu+1; j++) {
                     double temp = inf;
+                    double dist = pattern.get(i-1).dist(unk.get(j-1));
                     if (i-1>=0 && j-1>=0 && f[i-1][j-1] < inf)
-                        temp = Math.min(f[i-1][j-1] + pattern.get(i-1).dist(unk.get(j-1)), temp);
+                        temp = Math.min(f[i-1][j-1] + dist, temp);
                     if (i-1>=0  && f[i-1][j] < inf)
-                        temp = Math.min(f[i-1][j] + 1.5*lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
+                        temp = Math.min(f[i-1][j] + /*1.5*lineHeight*/2*dist, temp);
                     if (j-1>=0  && f[i][j-1] < inf)
-                        temp = Math.min(f[i][j-1] + 1.5*lineHeight/*2*pointDistance(pattern.get(i-1), unk.get(j-1))*/, temp);
+                        temp = Math.min(f[i][j-1] + /*1.5*lineHeight*/2*dist, temp);
                     if (temp < f[i][j]) f[i][j] = temp;
                 }
             }
@@ -101,23 +104,27 @@ public class Word {
             }
             System.out.println();
         }*/
-            return f[lp][lu] / ((unk.size()+pattern.size())>>1);
+            return f[lp][lu] / ((unk.size()+pattern.size())/2);
     }
     public String correctResult(Correction c, String replace) {
         assert(c.word.id == this.id);
         String ret = this.getString();
+        if (Math.abs(c.value) < delta) return (ret.substring(0, c.start) + ret.substring(c.end));
         return (ret.substring(0, c.start) + replace + ret.substring(c.end));
     }
     public void doCorrect(Correction c, String replace, List<Point> pntList) {
-        System.out.println("do correct"+ pointList.size() + "," + c.start +"," + c.end + "," +pntList.size());
+        //System.out.println("do correct"+ pointList.size() + "," + c.start +"," + c.end + "," +pntList.size());
+
         List<Point> newP = new ArrayList<>(pointList);
         newP = newP.subList(0, c.start);
-        newP.addAll(pntList);
+        if (Math.abs(c.value) > delta) {
+            newP.addAll(pntList);
+        }
         List<Point> lastP = pointList.subList(c.end, pointList.size());
         newP.addAll(lastP);
         pointList = newP;
-        System.out.println(getString());
-        System.out.println("==========");
+        //System.out.println(getString());
+        //System.out.println("==========");
     }
     public void match(List<Point> user) {
         corrections = new ArrayList<>();
