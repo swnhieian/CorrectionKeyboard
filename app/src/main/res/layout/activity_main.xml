@@ -15,11 +15,18 @@
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
         android:id="@+id/editText"/>-->
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/taskText"
+        android:fontFamily="monospace"
+        />
     <com.shiweinan.ckeyboard.myEditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
-        android:id="@+id/editText"/>
+        android:id="@+id/editText"
+        android:layout_below="@id/taskText"/>
     <com.shiweinan.ckeyboard.KeyboardView
         android:id="@+id/kbdView"
         android:layout_width="match_parent"

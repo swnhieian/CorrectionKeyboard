@@ -7,35 +7,55 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.NonNull;
 import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Date;
+import java.util.Map;
+import java.util.Set;
 
 public class KeyboardView extends View {
 
     public KeyboardView(Context context) {
         super(context);
+        init();
     }
 
     public KeyboardView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        init();
     }
 
     public KeyboardView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        init();
+    }
+
+    private static Map<Character, Point> charMap;
+    private void init() {
+        //generate char pos map
+        charMap = new HashMap<>();
+        String[] lines = new String[] {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
+        for (int i=0; i<3; i++) {
+            for (int j=0; j<lines[i].length(); j++) {
+                float x = (float) (108 * (j+0.5) + ((i==2)?(1.5*108):(i*0.5*108)));
+                float y = (float) (suggestionHeight + charHeight * (i+0.5));
+                charMap.put(lines[i].charAt(j), new Point(x, y));
+            }
+        }
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         drawKeyboard(canvas);
-
-
     }
 
     int charWidth = 108;
@@ -180,6 +200,9 @@ public class KeyboardView extends View {
             processor.showCorrectionHints(screenPoints);
             processor.canUndo = false;
         }
+        if (isEnterArea(x, y)) {
+            Logger.submit();
+        }
         updateSuggestion();
     }
 
@@ -206,7 +229,10 @@ public class KeyboardView extends View {
        return (y>suggestionHeight+charHeight*2 && y<suggestionHeight+charHeight*3 && x > 918);
    }
    private boolean isSpaceArea(float x, float y) {
-       return (y > suggestionHeight +charHeight*3 && x > 270 && x < 1350);
+       return (y > suggestionHeight+charHeight*3 && x > 270 && x < 810);
+   }
+   private boolean isEnterArea(float x, float y) {
+       return (y > suggestionHeight+charHeight*3 && x > 918);
    }
    private boolean isSuggestionArea(float x, float y) {
         return (y < suggestionHeight);
@@ -217,6 +243,10 @@ public class KeyboardView extends View {
        int lineNo = (int)((pos.y - suggestionHeight) / charHeight);
        int lineIdx = (int)((pos.x - (lineNo == 2?1.5*108:lineNo*0.5*108)) / 108);
        return lines[lineNo].charAt(lineIdx);
+   }
+   public static Point getCharPoint(char c) {
+       assert(Character.isAlphabetic(c));
+       return charMap.get(c);
    }
     private void updateSuggestion() {
         String raw = getRawInput();

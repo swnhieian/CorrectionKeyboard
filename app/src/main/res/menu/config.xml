@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/practice" android:title="Practice"></item>
+    <item android:id="@+id/session1" android:title="Session 1"></item>
+    <item android:id="@+id/session2" android:title="Session 2"></item>
+    <item android:id="@+id/session3" android:title="Session 3"></item>
+    <item android:id="@+id/session4" android:title="Session 4"></item>
+</menu>

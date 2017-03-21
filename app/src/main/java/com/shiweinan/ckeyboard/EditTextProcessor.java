@@ -392,7 +392,7 @@ public class EditTextProcessor {
         return (numerator / denominator);*/
 
     }
-    private int selectedWordId = -1;
+    private int selectedWordId = 0;
     public void processTouchMove(float x, float y, float lastX, float lastY) {
         float deltaX = x - lastX;
         float deltaY = y - lastY;
@@ -428,14 +428,21 @@ public class EditTextProcessor {
 
         }
         tiltOri = mainActivity.getTiltAngle();
-        Pair<Float, Float> cursor = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
-        cursorX = cursor.first;
-        cursorY = cursor.second;
-        currentX = cursorX;
-        currentY = cursorY;
+        if (selectedWordId>=0 && selectedWordId<topCorrections.size()) {
+            Pair<Float, Float> cursor = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
+            cursorX = cursor.first;
+            cursorY = cursor.second;
+            currentX = cursorX;
+            currentY = cursorY;
+        }
+
         //System.out.println(topCorrections.get(minI).word.id);
         updateView();
 
+    }
+    public void setInitWords(List<Word> w) {
+        words = w;
+        updateView();
     }
     public Pair<Float, Float> getTextCoordinate(int index) {
         int currentCol = 0;
