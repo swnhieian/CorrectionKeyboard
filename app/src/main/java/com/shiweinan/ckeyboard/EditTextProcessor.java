@@ -21,8 +21,9 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.SubMenu;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.PopupWindow;
+import android.view.inputmethod.EditorInfo;
+import android.widget.*;
+import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,9 +43,11 @@ public class EditTextProcessor {
     List<Word> words;
     boolean inCorrecting = false;
     MainActivity mainActivity;
-    public EditTextProcessor(EditText editText, MainActivity mainActivity) {
+    KeyboardView kbdView;
+    public EditTextProcessor(EditText editText, MainActivity mainActivity, KeyboardView kbdV) {
         this.editText = editText;
         this.mainActivity = mainActivity;
+        this.kbdView = kbdV;
         words = new ArrayList<>();
         if (pm == null) {
             View pmView = mainActivity.getLayoutInflater().inflate(R.layout.sample_popup_menu, null);
@@ -236,16 +239,24 @@ public class EditTextProcessor {
         for (int i=0; i<words.size(); i++) {
             str += words.get(i).getString();
         }
+        str += kbdView.getScreenString();
         return str;
     }
     private SpannableStringBuilder text;
-    private void updateView() {
-        updateView(getWholeText().length());
+    public void updateView()
+    {
+        int l = getWholeText().length();
+        updateView(l);
     }
     private void updateView(int cursorPos) {
         updateStartIndex();
         String str = getWholeText();
+        String screenStr = kbdView.getScreenString();
         text = new SpannableStringBuilder(str);
+        if (screenStr.length() > 0) {
+            UnderlineSpan us = new UnderlineSpan();
+            text.setSpan(us, text.length() - screenStr.length(), text.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        }
         for (int i = 0; i < words.size(); i++) {
             Word w = words.get(i);
             if (w.corrections != null && w.corrections.size() > 0) {
@@ -268,18 +279,20 @@ public class EditTextProcessor {
                     }
                     text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 }*/
-                if (w.id == topCorrections.get(selectedWordId).word.id) { //preview change
-                    BackgroundColorSpan bcs = new BackgroundColorSpan(Color.YELLOW);
-                    text.setSpan(bcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                    String newS = w.correctResult(w.corrections.get(0), correctingStr);
-                    text.replace(w.startIndex, Math.min(w.startIndex + newS.length(), text.length()), newS);
-                    if (newS.length() < w.size()) {//delete str case
-                        String t = "";
-                        for (int k=0; k<w.size() - newS.length(); k++) t += " ";
-                        text.replace(w.startIndex+newS.length(), w.startIndex+w.size(), t);
+                if (selectedWordId >= 0 && selectedWordId < topCorrections.size()) {
+                    if (w.id == topCorrections.get(selectedWordId).word.id) { //preview change
+                        BackgroundColorSpan bcs = new BackgroundColorSpan(Color.YELLOW);
+                        text.setSpan(bcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                        String newS = w.correctResult(w.corrections.get(0), correctingStr);
+                        text.replace(w.startIndex, Math.min(w.startIndex + newS.length(), text.length()), newS);
+                        if (newS.length() < w.size()) {//delete str case
+                            String t = "";
+                            for (int k = 0; k < w.size() - newS.length(); k++) t += " ";
+                            text.replace(w.startIndex + newS.length(), w.startIndex + w.size(), t);
+                        }
+                        UnderlineSpan us = new UnderlineSpan();
+                        text.setSpan(us, w.startIndex + w.corrections.get(0).start, w.startIndex + w.corrections.get(0).start + correctingStr.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                     }
-                    UnderlineSpan us = new UnderlineSpan();
-                    text.setSpan(us, w.startIndex + w.corrections.get(0).start, w.startIndex + w.corrections.get(0).start+correctingStr.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 }
             }
         }

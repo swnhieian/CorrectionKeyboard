@@ -60,7 +60,8 @@ public class KeyboardView extends View {
 
     int charWidth = 108;
     static int charHeight = 167;
-    static int suggestionHeight = (int)(charHeight*0.8);
+    //static int suggestionHeight = (int)(charHeight*0.8);
+    static int suggestionHeight = 0;
     String[] suggestions = new String[] {"", "", ""};
 
     private void drawKeyboard(Canvas canvas) {
@@ -69,14 +70,14 @@ public class KeyboardView extends View {
         int suggestionColor = Color.rgb(228, 231, 233);
         Paint p = new Paint();
         p.setColor(suggestionColor);
-        canvas.drawRect(0, 0, 1080, suggestionHeight, p);
+        //canvas.drawRect(0, 0, 1080, suggestionHeight, p);
         Drawable d = getResources().getDrawable(R.drawable.googlekeyboard);
 
         double scale = 1080.0 / d.getIntrinsicWidth();
         d.setBounds(0, suggestionHeight, 1080, (int)(d.getIntrinsicHeight()*scale) + suggestionHeight);
         d.draw(canvas);
 
-        if (suggestions.length > 0) {//draw suggestions
+        if (false && suggestions.length > 0) {//draw suggestions
             p.setColor(Color.rgb(202,208,210));
             int sepPadding = 25;
             p.setStrokeWidth(5);
@@ -199,6 +200,7 @@ public class KeyboardView extends View {
             screenPoints.add(new Point(x, y));
             processor.showCorrectionHints(screenPoints);
             processor.canUndo = false;
+            processor.updateView();
         }
         if (isEnterArea(x, y)) {
             Logger.submit();
@@ -248,6 +250,9 @@ public class KeyboardView extends View {
        assert(Character.isAlphabetic(c));
        return charMap.get(c);
    }
+   public String getScreenString() {
+       return getRawInput();
+   }
     private void updateSuggestion() {
         String raw = getRawInput();
         suggestions[0] = "";
@@ -265,6 +270,6 @@ public class KeyboardView extends View {
         processor.addWord(screenPoints);
         screenPoints.clear();
         processor.showCorrectionHints(screenPoints);
-        updateSuggestion();
+        //updateSuggestion();
     }
 }

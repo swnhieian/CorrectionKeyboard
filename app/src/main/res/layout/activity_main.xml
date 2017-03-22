@@ -15,24 +15,63 @@
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
         android:id="@+id/editText"/>-->
-    <EditText
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:id="@+id/taskStatus"
+        android:text="Session 1/20"
+        android:textAlignment="center"
+        android:fontFamily="monospace"
+        android:textSize="50px"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/operationButtons"
+        android:layout_below="@id/taskStatus">
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="start"/>
+        <Button
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="next"/>
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="offensive"
+        android:id="@+id/correctText"
+        android:layout_below="@id/operationButtons"
+        android:textAlignment="center"
+        android:fontFamily="monospace"
+        android:textSize="50px"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="0px"
         android:id="@+id/taskText"
+        android:visibility="invisible"
         android:fontFamily="monospace"
         />
-    <com.shiweinan.ckeyboard.myEditText
+    <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:fontFamily="monospace"
         android:id="@+id/editText"
-        android:layout_below="@id/taskText"/>
+        android:layout_below="@id/correctText"/>
+
     <com.shiweinan.ckeyboard.KeyboardView
         android:id="@+id/kbdView"
         android:layout_width="match_parent"
-        android:layout_height="803px"
+        android:layout_height="670px"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:layout_alignParentRight="true"/>
+    <!--android:layout_height="803px"-->
 
 </RelativeLayout>

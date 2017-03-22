@@ -12,6 +12,7 @@ import java.util.Random;
  * Created by Weinan on 2017/3/21.
  */
 enum Phase { Practice, SessionOne, SessionTwo, SessionThree, SessionFour};
+enum KeyboardType { Google, CKeyboard };
 public class Logger {
     final static int sessionSize = 20;
     public static String userName;
@@ -19,6 +20,7 @@ public class Logger {
     public static MainActivity mainActivity;
     public static EditTextProcessor processor;
     private static Phase currentPhase;
+    public static KeyboardType currentKbdType = KeyboardType.CKeyboard;
     private static String[] allTexts;
     private static List<String> tasks = new ArrayList<>();
     private static int currentTaskNo = -1;
@@ -101,7 +103,7 @@ public class Logger {
     public static void update() {
         tv.setText(getTaskLine());
         processor.setInitWords(generateError());
-        mainActivity.setTitle(String.format("%s : %d / %d", title, currentTaskNo + 1, sessionSize));
+        mainActivity.setTitle(String.format("%s %s : %d / %d", currentKbdType.toString(), title, currentTaskNo + 1, sessionSize));
     }
     public static void submit() {
         //TODO ： deal with result
@@ -132,6 +134,16 @@ public class Logger {
                 title = "Error!";
         }
         loadTask();
+    }
+    public static void swtichKeyboard() {
+        if (currentPhase != Phase.Practice && currentTaskNo != 0) return;
+        if (currentKbdType == KeyboardType.CKeyboard) {
+            currentKbdType = KeyboardType.Google;
+        } else {
+            currentKbdType = KeyboardType.CKeyboard;
+        }
+        mainActivity.switchKeyboard();
+        update();
     }
 
 }

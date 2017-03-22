@@ -1,6 +1,9 @@
 package com.shiweinan.ckeyboard;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.hardware.Sensor;
@@ -9,38 +12,71 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextWatcher;
 import android.text.style.BackgroundColorSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.view.ActionMode;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.widget.*;
+import android.widget.TextView;
 
 import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     EditTextProcessor processor;
+    EditText editText;
+    KeyboardView kbdView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        EditText editText = (EditText)findViewById(R.id.editText);
+        editText = (EditText)findViewById(R.id.editText);
         editText.setShowSoftInputOnFocus(false);
-        processor = new EditTextProcessor(editText, this);
-        KeyboardView kbdView = (KeyboardView)findViewById(R.id.kbdView);
+        kbdView = (KeyboardView)findViewById(R.id.kbdView);
+        processor = new EditTextProcessor(editText, this, kbdView);
         kbdView.setProcessor(processor);
+
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+                if (editable.length() > 0 && editable.charAt(editable.length() - 1) == '\n') {
+                    Logger.submit();
+                }
+
+            }
+        });
+
+
 
         //get sensor data
         SensorManager sm = (SensorManager)getSystemService(SENSOR_SERVICE);
@@ -71,6 +107,34 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         Logger.setPhase(Phase.Practice);
+        //write permission
+        if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, 0);
+        }
+    }
+    public void switchKeyboard() {
+        editText.setShowSoftInputOnFocus(Logger.currentKbdType == KeyboardType.Google);
+        editText.setImeOptions(EditorInfo.IME_ACTION_DONE);
+        System.out.println("v^v^v^v^v^v^v^v^v^v^");
+        if (Logger.currentKbdType == KeyboardType.Google) {
+            kbdView.setVisibility(View.INVISIBLE);
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
+        } else {
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(this.getCurrentFocus().getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+            //imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
+            kbdView.setVisibility(View.VISIBLE);
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (grantResults.length > 0 && requestCode == 0) {
+            if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "cannot write file!", Toast.LENGTH_SHORT).show();
+                finish();
+            }
+        }
     }
     float[] accV = new float[3];
     float[] magV = new float[3];
@@ -127,6 +191,9 @@ public class MainActivity extends AppCompatActivity {
                 break;
             case R.id.session4:
                 Logger.setPhase(Phase.SessionFour);
+                break;
+            case R.id.changeKbd:
+                Logger.swtichKeyboard();
                 break;
             default:
                 break;

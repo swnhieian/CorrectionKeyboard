@@ -10,7 +10,7 @@ import java.util.List;
  */
 
 public class Word {
-    final double matchThreshold = 300;
+    final double matchThreshold = 100;
     final double inf = 100000000;
     final double delta =  1e-8;
     final double lineHeight = 167;

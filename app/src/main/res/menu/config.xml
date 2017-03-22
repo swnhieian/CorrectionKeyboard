@@ -1,8 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
     <item android:id="@+id/practice" android:title="Practice"></item>
-    <item android:id="@+id/session1" android:title="Session 1"></item>
-    <item android:id="@+id/session2" android:title="Session 2"></item>
-    <item android:id="@+id/session3" android:title="Session 3"></item>
-    <item android:id="@+id/session4" android:title="Session 4"></item>
+    <item android:title="start" app:showAsAction="always"></item>
+    <item android:title="Session" app:showAsAction="withText">
+        <menu>
+            <item android:id="@+id/session1" android:title="1"/>
+            <item android:id="@+id/session2" android:title="2"/>
+            <item android:id="@+id/session3" android:title="3"/>
+            <item android:id="@+id/session4" android:title="4"/>
+        </menu>
+    </item>
+    <item android:title="Length" app:showAsAction="withText">
+        <menu>
+            <item android:title="1"/>
+            <item android:title="2"/>
+            <item android:title="4"/>
+        </menu>
+    </item>
+    <item android:id="@+id/changeKbd" android:title="Switch Keyboard"></item>
 </menu>
