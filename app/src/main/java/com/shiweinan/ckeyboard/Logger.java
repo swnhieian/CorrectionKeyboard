@@ -4,7 +4,9 @@ import android.widget.*;
 
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.security.Key;
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.List;
 import java.util.Random;
 
@@ -15,20 +17,18 @@ enum Phase { Practice, SessionOne, SessionTwo, SessionThree, SessionFour};
 enum KeyboardType { Google, CKeyboard };
 public class Logger {
     final static int sessionSize = 20;
-    public static String userName;
+    public static String userName = "";
     public static android.widget.EditText tv;
     public static MainActivity mainActivity;
     public static EditTextProcessor processor;
-    private static Phase currentPhase;
+    private static Phase currentPhase = Phase.Practice;
     public static KeyboardType currentKbdType = KeyboardType.CKeyboard;
     private static String[] allTexts;
     private static List<String> tasks = new ArrayList<>();
     private static int currentTaskNo = -1;
     private static String title;
+    private static Random random = new Random();
     public Logger() {
-        userName = "";
-        tasks = new ArrayList<>();
-        currentPhase = Phase.Practice;
     }
     public static void setAllTask(List<String> texts) {
         assert(texts.size() == 500);
@@ -40,9 +40,8 @@ public class Logger {
     }
     private static void loadTask() {
         List<Integer> index = new ArrayList<>();
-        Random rand = new Random();
         int repeat = 1;
-        switch (currentPhase) {
+        switch (Logger.currentPhase) {
             case Practice:
                 repeat = 1;
                 break;
@@ -62,7 +61,7 @@ public class Logger {
                 break;
         }
         while (index.size() < sessionSize*repeat) {
-            int id = rand.nextInt(allTexts.length);
+            int id = random.nextInt(allTexts.length);
             if (!index.contains(id)) {
                 index.add(id);
             }
@@ -80,6 +79,7 @@ public class Logger {
         currentTaskNo = 0;
         update();
     }
+
     public static String getTaskLine() {
         return tasks.get(currentTaskNo);
     }
@@ -87,17 +87,48 @@ public class Logger {
         String[] correctWords = getTaskLine().split(" ");
         List<Word> ret = new ArrayList<>();
         int start = 0;
+        String errWord = "";
+        int errNo = random.nextInt(correctWords.length);
         for (int i=0; i<correctWords.length; i++) {
-            if (correctWords[i].length() == 0) continue;
             List<Point> pntList = new ArrayList<>();
             for (int j=0; j<correctWords[i].length(); j++) {
                 Point p = KeyboardView.getCharPoint(correctWords[i].charAt(j));
                 pntList.add(p);
             }
+
+            if (i == errNo) {
+                double errType = random.nextDouble();
+                //50% insertion 26% substitution 16% omission 8% transposition
+                if (errType < 0.5) {
+                    //insertion: find random pos and random char
+                    int pos = random.nextInt(pntList.size());
+                    char c = (char)((int)('a') + random.nextInt(26));
+                    pntList.add(pos, KeyboardView.getCharPoint(c));
+                    String correctWord = correctWords[i];
+                    errWord = correctWord.substring(0, pos) + c + correctWord.substring(pos);
+                } else if (errType < 0.76) {
+                    //sustitution: 80% same row and surrounding
+                    double type = random.nextDouble();
+                    //find random pos
+                    if (type < 0.8) {
+                        //same row and surrounding
+                    } else {
+                        //within 2 keys
+                    }
+                } else if (errType < 0.92) {
+                    //omission:
+                } else {
+                    //tranposition:
+                }
+            }
             Word w = new Word(pntList, start);
+            if (i == errNo) {
+                w.alpha = 100;
+            }
             ret.add(w);
             start += (w.size() + 1);
         }
+        mainActivity.setErrorHint(errWord + "→" + correctWords[errNo]);
         return ret;
     }
     public static void update() {

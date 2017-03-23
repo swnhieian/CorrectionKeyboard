@@ -19,9 +19,11 @@ public class Word {
     List<Correction> corrections;
     int id;
     int startIndex;
+    public int alpha = 255;
     public Word(Word w) {
         this.id = w.id;
         this.startIndex = w.startIndex;
+        this.alpha = w.alpha;
         this.pointList = new ArrayList<>();
         for (int i=0; i<w.pointList.size(); i++) {
             this.pointList.add(w.pointList.get(i).clone());

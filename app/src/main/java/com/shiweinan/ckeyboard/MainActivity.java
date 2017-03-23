@@ -169,6 +169,10 @@ public class MainActivity extends AppCompatActivity {
     public double getTiltAngle() {
         return oriV[1];
     }
+    public void setErrorHint(String str) {
+        TextView tv = (TextView)findViewById(R.id.correctText);
+        tv.setText(str);
+    }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.config, menu);

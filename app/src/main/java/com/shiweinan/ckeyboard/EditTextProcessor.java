@@ -259,6 +259,8 @@ public class EditTextProcessor {
         }
         for (int i = 0; i < words.size(); i++) {
             Word w = words.get(i);
+            ForegroundColorSpan cs = new ForegroundColorSpan(Color.argb(w.alpha, 0, 0, 0));
+            ForegroundColorSpan cs2 = new ForegroundColorSpan(Color.argb(w.alpha, 0, 0, 0));
             if (w.corrections != null && w.corrections.size() > 0) {
                 ForegroundColorSpan fcs = new ForegroundColorSpan(Color.BLUE);
                 if (w.corrections.size() > 1) {
@@ -266,7 +268,11 @@ public class EditTextProcessor {
                 }
                 //text.setSpan(fcs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 Correction c =  w.corrections.get(0);
+                text.setSpan(cs2, w.startIndex, w.startIndex + c.start, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 text.setSpan(fcs, w.startIndex + c.start, Math.min(w.startIndex + c.end, text.length()), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                text.setSpan(cs, Math.min(w.startIndex + c.end, text.length()), Math.min(w.startIndex + w.size(), text.length()), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            } else {
+                text.setSpan(cs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
             }
         }
         if (inCorrecting) {
