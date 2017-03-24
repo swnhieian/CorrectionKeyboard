@@ -152,21 +152,23 @@ public class EditTextProcessor {
         //System.out.println("====================");
         if (selectedWordId >=0 && selectedWordId < topCorrections.size() && topCorrections.get(selectedWordId).word.hasMenu()) {
             pm.setValue(topCorrections.get(selectedWordId).word, correctingStr);
-            if (tiltOri - angle> 0.2) {
+            if (tiltOri - angle> 0.3) {
                 System.out.println((new Date()).getTime());
                 System.out.println("+++++++++++++++++++++++++++++111111111");
-                pm.incSelect();
                 tiltOri = angle;
-                if (!pm.isShowing()) {
+                if (pm.isShowing()) {
+                    pm.incSelect();
+                } else/*(!pm.isShowing())*/ {
                     Pair<Float, Float> pp = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
                     pm.showAsDropDown(editText, (int)Math.floor(pp.first), (int)Math.floor(pp.second) - editText.getHeight() + editText.getLineHeight());
                 }
-            } else if (tiltOri - angle < -0.2) {
+            } else if (tiltOri - angle < -0.3) {
                 System.out.println((new Date()).getTime());
                 System.out.println("------------------------------111111111");
-                pm.decSelect();
                 tiltOri = angle;
-                if (!pm.isShowing()) {
+                if (pm.isShowing()) {
+                    pm.decSelect();
+                } else  {
                     Pair<Float, Float> pp = getTextCoordinate(topCorrections.get(selectedWordId).getCenter());
                     pm.showAsDropDown(editText, (int)Math.floor(pp.first), (int)Math.floor(pp.second) - editText.getHeight() + editText.getLineHeight());
                 }
@@ -270,7 +272,7 @@ public class EditTextProcessor {
                 Correction c =  w.corrections.get(0);
                 text.setSpan(cs2, w.startIndex, w.startIndex + c.start, Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 text.setSpan(fcs, w.startIndex + c.start, Math.min(w.startIndex + c.end, text.length()), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-                text.setSpan(cs, Math.min(w.startIndex + c.end, text.length()), Math.min(w.startIndex + w.size(), text.length()), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+                text.setSpan(cs, Math.min(w.startIndex + c.end, text.length()), Math.min(w.startIndex + c.end,Math.min(w.startIndex + w.size(), text.length())), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
             } else {
                 text.setSpan(cs, w.startIndex, w.startIndex + w.size(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
             }
@@ -347,6 +349,7 @@ public class EditTextProcessor {
                 if (Math.abs(getTextCoordinate(c.getCenter()).first - xpos) < 108) {
                     if (c.value < tempV) {
                         selectedWordId = i;
+                        tempV = c.value;
                     }
                 }
             }
@@ -404,7 +407,9 @@ public class EditTextProcessor {
         double d2 = Math.sqrt(Math.pow(x - cx, 2)+ Math.pow(y - cy, 2));
         if (d1 == 0 || d2 == 0) return inf;
         double cos = Math.abs(Math.acos(a / d1 / d2));
-        return cos;
+        double dist = new Point(cx, cy).dist(new Point(x, y));
+        double ret = cos / Math.PI * dist / 1080;
+        return ret;
         /*double c = dx * cy - dy * cx;
         double numerator = Math.abs(dy * x - dx * y + c);
         double denominator = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
@@ -487,8 +492,8 @@ public class EditTextProcessor {
                 if (currentCol == lineCharNum && spaceAppend == 0) {
                     currentCol -= 1;
                 }
-                float py = currentRow * editText.getLineHeight();
-                float px = currentCol * (1080 / lineCharNum);
+                float py = (currentRow+0.5f) * editText.getLineHeight();
+                float px = (currentCol+0.5f) * (1080 / lineCharNum);
                 return new Pair<>(px, py);
             }
             totLen += (str.length() + 1);

@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.text.TextPaint;
 import android.util.AttributeSet;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Date;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 public class KeyboardView extends View {
@@ -123,7 +125,64 @@ public class KeyboardView extends View {
     private float lastRotX = 0;
     private boolean inCorrectionStatus = false;
     private List<Point> screenPoints = new ArrayList<>();
-
+    private static Map<Character, Pair<Character, Character>> charSameRowNeighbors =
+            new HashMap<Character, Pair<Character, Character>>() {{
+                put('q', new Pair<Character, Character>('w', 'w'));
+                put('w', new Pair<Character, Character>('q', 'e'));
+                put('e', new Pair<Character, Character>('w', 'r'));
+                put('r', new Pair<Character, Character>('e', 't'));
+                put('t', new Pair<Character, Character>('r', 'y'));
+                put('y', new Pair<Character, Character>('t', 'u'));
+                put('u', new Pair<Character, Character>('y', 'i'));
+                put('i', new Pair<Character, Character>('u', 'o'));
+                put('o', new Pair<Character, Character>('i', 'p'));
+                put('p', new Pair<Character, Character>('o', 'o'));
+                put('a', new Pair<Character, Character>('s', 's'));
+                put('s', new Pair<Character, Character>('a', 'd'));
+                put('d', new Pair<Character, Character>('s', 'f'));
+                put('f', new Pair<Character, Character>('d', 'g'));
+                put('g', new Pair<Character, Character>('f', 'h'));
+                put('h', new Pair<Character, Character>('g', 'j'));
+                put('j', new Pair<Character, Character>('h', 'k'));
+                put('k', new Pair<Character, Character>('j', 'l'));
+                put('l', new Pair<Character, Character>('k', 'k'));
+                put('z', new Pair<Character, Character>('x', 'x'));
+                put('x', new Pair<Character, Character>('z', 'c'));
+                put('c', new Pair<Character, Character>('x', 'v'));
+                put('v', new Pair<Character, Character>('c', 'b'));
+                put('b', new Pair<Character, Character>('v', 'n'));
+                put('n', new Pair<Character, Character>('b', 'm'));
+                put('m', new Pair<Character, Character>('n', 'n'));
+            }};
+    private static Map<Character, char[]> charNeighbors =
+            new HashMap<Character, char[]>() {{
+                put('q', new char[] {'w','a'});
+                put('w', new char[] {'q','a','s','e'});
+                put('e', new char[] {'w','r','s','d'});
+                put('r', new char[] {'e','d','f','t'});
+                put('t', new char[] {'r','y','f','g'});
+                put('y', new char[] {'t','u','g','h'});
+                put('u', new char[] {'y','i','h','j'});
+                put('i', new char[] {'u','o','j','k'});
+                put('o', new char[] {'i','p','k','l'});
+                put('p', new char[] {'o','l'});
+                put('a', new char[] {'q','s','z'});
+                put('s', new char[] {'w','a','d','z'});
+                put('d', new char[] {'e','r','s','f','x'});
+                put('f', new char[] {'r','t','d','g','c'});
+                put('g', new char[] {'t','y','f','h','v'});
+                put('h', new char[] {'y','u','g','j','b'});
+                put('j', new char[] {'u','i','h','k','n'});
+                put('k', new char[] {'i','o','j','l','m'});
+                put('l', new char[] {'o','p','k','m'});
+                put('z', new char[] {'a','s','x'});
+                put('x', new char[] {'d','z','c'});
+                put('c', new char[] {'f','x','v'});
+                put('v', new char[] {'g','c','b'});
+                put('b', new char[] {'h','v','n'});
+                put('n', new char[] {'j','b','m'});
+                put('m', new char[] {'k','l','n'});
+            }};
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -249,6 +308,17 @@ public class KeyboardView extends View {
    public static Point getCharPoint(char c) {
        assert(Character.isAlphabetic(c));
        return charMap.get(c);
+   }
+   public static Point getSurrondingChar(char c, double random) {
+       Pair<Character, Character> pair = charSameRowNeighbors.get(c);
+       if (random > 0.5)
+           return getCharPoint(pair.first);
+       else
+           return getCharPoint(pair.second);
+   }
+   public static Point getNearChar(char c, Random random) {
+       char[] chars = charNeighbors.get(c);
+       return getCharPoint(chars[random.nextInt(chars.length)]);
    }
    public String getScreenString() {
        return getRawInput();

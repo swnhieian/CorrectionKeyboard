@@ -53,15 +53,23 @@ public class PopupMenu extends PopupWindow {
         for (int i=1; i<4; i++) {
             if (word.corrections.size() > i) {
                 TextView tv = (TextView) contentView.findViewById(ids[i-1]);
+                tv.setVisibility(View.VISIBLE);
                 String res = word.correctResult(word.corrections.get(i), replaceStr);
                 tv.setText(res);
+                System.out.println("???????????????????");
+                System.out.println(res);
+                System.out.println("???????????????????");
             }
         }
         for (int i=word.corrections.size()-1; i<3; i++) {
             TextView tv = (TextView) contentView.findViewById(ids[i]);
             tv.setVisibility(View.INVISIBLE);
         }
-        maxNum = word.corrections.size()-1;
+        maxNum = Math.min(3, word.corrections.size()-1);
+        System.out.println("~~~~~~~~~~~~~~~~~~~~");
+        System.out.println(maxNum);
+        if (selected >= maxNum) selected = maxNum - 1;
+        if (selected < 0) selected = 0;
         //selected = 0;
     }
     int selected = 0;
